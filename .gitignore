@@ -166,3 +166,4 @@ fabric.properties
 
 # IntelliJ project folder
 .idea/
+.DS_Store
