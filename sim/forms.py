@@ -10,7 +10,7 @@ class ValueForm(forms.Form):
     )
     type = forms.ChoiceField(label="Type of argument", choices=ARG_TYPE_CHOICE)
     name = forms.CharField(label="Element name", max_length=50)
-    args = forms.CharField(label="Arguements", max_length=300)
+    args = forms.CharField(label="Arguments", max_length=300)
 
     def is_valid(self):
         valid = super(ValueForm, self).is_valid()
@@ -44,7 +44,6 @@ class ValueForm(forms.Form):
         return valid
 
 
-
 class AddFileForm(forms.Form):
     file = forms.FileField(label="Upload file")
     name = forms.CharField(label="Include in the args as", max_length=50, required=False)
@@ -55,7 +54,7 @@ class ExecutableFileForm(forms.Form):
 
 
 class ArgTemplateForm(forms.Form):
-    argtemplate = forms.CharField(label="Arguement template", max_length=300)
+    argtemplate = forms.CharField(label="Argument template", max_length=300)
 
 
 
