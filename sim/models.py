@@ -1,7 +1,7 @@
 from django.db import models
 
 class Configuration(models.Model):
-    # Model of a saved configuration
+    """ Model of a saved configuration """
     name = models.CharField(max_length=200)
     arg_template = models.CharField(max_length=300)
 
@@ -9,7 +9,7 @@ class Configuration(models.Model):
         return self.name
 
 class Argument(models.Model):
-    # Model of a defined argument in a saved configuration
+    """ Model of a defined argument in a saved configuration """
     ARG_TYPE_CHOICE = (
         ('r', 'Range'),
         ('v', 'List of values'),
@@ -22,3 +22,8 @@ class Argument(models.Model):
 
     def __str__(self):
         return self.name
+
+
+class JobIdModel(models.Model):
+    """ This model stores created cluster_ids for further use. Id of a model is a local id of a job. """
+    cluster_id = models.IntegerField()

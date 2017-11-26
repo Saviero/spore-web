@@ -35,12 +35,11 @@ def index(request):
                 for form in file_formset:
                     file_data.append(form.cleaned_data)
                 parser.run_specs(exec_form.cleaned_data, value_data, file_data)
+                # TODO Test the actual form
 
             else:
                 # TODO Name not specified, adding error to form
                 pass
-
-
     else:
         value_formset = ValueFormSet(prefix='values')
         file_formset = FileFormSet(prefix='files')

@@ -6,16 +6,17 @@ from django.test import TestCase
 from sim.spec_factory import SpecFactory
 from sim.forms import ValueForm
 from django.core.files.uploadedfile import UploadedFile
+from sim.models import JobIdModel
 
 
-class SpecFactoryTest(TestCase):
+class SpecFactoryParserTest(TestCase):
     def test_parser_can_parse_template(self):
         template = '{asdf}-c {first} -{second} {123third}'
 
         factory = SpecFactory(template)
-
         names = factory.get_names()
         buff = factory.get_buff()
+
         self.assertEqual(len(names), 4, msg='Incorrect number of names')
         correct_names = ['asdf', 'first', 'second', '123third']
         i = 0
@@ -140,11 +141,11 @@ class SpecFactoryTest(TestCase):
         file_data = [
             {
                 'name': '123third',
-                'file': UploadedFile(file=open('test_files/cats.txt'), name='cats.txt'),
+                'file': UploadedFile(file=open('sim/static/sim/test_files/cats.txt'), name='cats.txt'),
             }
         ]
         exec_data = {
-            'execfile': UploadedFile(file=open('test_files/helloworld'), name='helloworld')
+            'execfile': UploadedFile(file=open('sim/static/sim/test_files/helloworld'), name='helloworld')
         }
         correct_combs = [
             '1-chello-2 cats.txt',
@@ -157,17 +158,31 @@ class SpecFactoryTest(TestCase):
             '2-cworld-4 cats.txt',
         ]
 
-        clusterid = factory.run_specs(exec_data, value_data, file_data)
+        cluster_id = factory.run_specs(exec_data, value_data, file_data)
 
         schedd = htcondor.Schedd()
+        # Waiting for jobs to end
         sleep(30)
-        history = list(schedd.history('ClusterId == ' + str(clusterid), ['Cmd', 'Arguments', 'TransferInput'], -1))
+        # Looking for local job id in cache
+        job_id = JobIdModel.objects.get(cluster_id=cluster_id).id
+
+        self.assertFalse(job_id is None, msg='Job with cluster_id= '+str(cluster_id) + ' is not in cache')
+        # Checking through history for our job
+        history = list(schedd.history('ClusterId == ' + str(cluster_id), ['Cmd', 'Arguments', 'TransferInput'], -1))
         self.assertEqual(len(history), 8, msg='Number of jobs is not 8, got jobs: ' + str(history))
+        # Expected paths for exec and input files
+        exec_path = os.path.abspath(os.path.dirname(__file__)) + '/' + str(job_id) + '/helloworld'
+        input_path = 'cats.txt, '
         for job in history:
-            self.assertEqual(job['Cmd'], os.path.abspath(os.path.dirname(__file__)) + '/temp/helloworld')
-            self.assertTrue(job['Argument'] in correct_combs)
-            self.assertEqual(job['TransferInput'], os.path.abspath(os.path.dirname(__file__)) + '/temp/cats.txt')
-            # TODO Add messages and test properly
+            self.assertEqual(job['Cmd'],
+                             exec_path,
+                             msg='Exec file has wrong path; expected ' + exec_path + ', got ' + job['Cmd'])
+            self.assertTrue(job['Arguments'] in correct_combs,
+                            msg='Argument is not in accepted combs: ' + job['Arguments'])
+            self.assertEqual(job['TransferInput'],
+                             input_path,
+                             msg='Input files have wrong path; expected (' +
+                                 input_path + '), got (' + job['TransferInput'] + ')')
 
 
 class FormTest(TestCase):
