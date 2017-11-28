@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 
 {% block extrahead %}
-<link rel="stylesheet" href="/index.css">
+<link rel="stylesheet" href="/css/index.css">
 {% endblock extrahead %}
 
 {% block content %}
@@ -22,7 +22,7 @@
     </script>
 
     <h3>Submit Simulation</h3>
-    <form id="spec_form" method="post" action="/sim/">
+    <form id="spec_form" method="post" action="/sim/" enctype="multipart/form-data">
         {{ exec_form.as_p }}
         {{ argtemp_form.as_p }}
         <table id="id_value_forms">
