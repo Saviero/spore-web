@@ -3,13 +3,13 @@
     font-family: Helvetica;
 }
 
-.header {
+.site-header {
     padding: 15px;
     margin-bottom: 8px;
     background-color: LightBlue;
 }
 
-.header h1 {
+.site-header h1 {
     padding-left: 15px;
 }
 

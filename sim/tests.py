@@ -2,7 +2,7 @@ import htcondor
 import os
 
 from time import sleep
-from django.test import TestCase
+from django.test import TestCase, Client
 from sim.spec_factory import SpecFactory
 from sim.forms import ValueForm
 from django.core.files.uploadedfile import UploadedFile
@@ -121,6 +121,8 @@ class SpecFactoryParserTest(TestCase):
     def test_can_submit_job(self):
         template = '{asdf}-c{first}-{second} {123third}'
         factory = SpecFactory(template)
+        exec_file = open('sim/static/sim/test_files_spec/helloworld')
+        input_file = open('sim/static/sim/test_files_spec/cats.txt')
         value_data = [
             {
                 'type': 'r',
@@ -141,11 +143,13 @@ class SpecFactoryParserTest(TestCase):
         file_data = [
             {
                 'name': '123third',
-                'file': UploadedFile(file=open('sim/static/sim/test_files/cats.txt'), name='cats.txt'),
+                'file': UploadedFile(file=input_file, name='cats.txt'),
             }
         ]
         exec_data = {
-            'execfile': UploadedFile(file=open('sim/static/sim/test_files/helloworld'), name='helloworld')
+            'job_name': 'testfactory',
+            'exec_file': UploadedFile(file=exec_file, name='helloworld'),
+            'arg_template': '{asdf}-c{first}-{second} {123third}'
         }
         correct_combs = [
             '1-chello-2 cats.txt',
@@ -160,18 +164,86 @@ class SpecFactoryParserTest(TestCase):
 
         cluster_id = factory.run_specs(exec_data, value_data, file_data)
 
+        exec_file.close()
+        input_file.close()
         schedd = htcondor.Schedd()
         # Waiting for jobs to end
         sleep(30)
         # Looking for local job id in cache
-        job_id = JobIdModel.objects.get(cluster_id=cluster_id).id
+        job_name = JobIdModel.objects.get(cluster_id=cluster_id).job_name
 
-        self.assertFalse(job_id is None, msg='Job with cluster_id= '+str(cluster_id) + ' is not in cache')
+        self.assertFalse(job_name is None, msg='Job with cluster_id= '+str(cluster_id) + ' is not in cache')
         # Checking through history for our job
         history = list(schedd.history('ClusterId == ' + str(cluster_id), ['Cmd', 'Arguments', 'TransferInput'], -1))
         self.assertEqual(len(history), 8, msg='Number of jobs is not 8, got jobs: ' + str(history))
         # Expected paths for exec and input files
-        exec_path = os.path.abspath(os.path.dirname(__file__)) + '/' + str(job_id) + '/helloworld'
+        exec_path = os.path.abspath(os.path.dirname(__file__)) + '/' + job_name + '/helloworld'
+        input_path = 'cats.txt, '
+        for job in history:
+            self.assertEqual(job['Cmd'],
+                             exec_path,
+                             msg='Exec file has wrong path; expected ' + exec_path + ', got ' + job['Cmd'])
+            self.assertTrue(job['Arguments'] in correct_combs,
+                            msg='Argument is not in accepted combs: ' + job['Arguments'])
+            self.assertEqual(job['TransferInput'],
+                             input_path,
+                             msg='Input files have wrong path; expected (' +
+                                 input_path + '), got (' + job['TransferInput'] + ')')
+
+    def test_view_can_submit_job(self):
+        exec_file = open(os.path.abspath(os.path.dirname(__file__)) + '/static/sim/test_files_view/helloworld')
+        input_file = open(os.path.abspath(os.path.dirname(__file__)) + '/static/sim/test_files_view/cats.txt')
+        c = Client()
+        post_data = {
+            'values-1-name': u'two',
+            'values-MIN_NUM_FORMS': u'0',
+            'values-0-type': u'r',
+            'values-0-args': u'1, 5, 1',
+            'files-0-name': u'three',
+            'values-INITIAL_FORMS': u'0',
+            'values-1-args': u'cats, dogs, hamsters',
+            'files-MAX_NUM_FORMS': u'1000',
+            'submit': u'Start Simulation',
+            'values-TOTAL_FORMS': u'2',
+            'files-MIN_NUM_FORMS': u'0',
+            'files-INITIAL_FORMS': u'0',
+            'values-0-name': u'one',
+            'values-1-type': u'v',
+            'arg_template': u'{one}{two} {three}',
+            'job_name': u'testview',
+            'values-MAX_NUM_FORMS': u'1000',
+            'files-TOTAL_FORMS': u'1',
+            'exec_file': UploadedFile(file=exec_file, name='helloworld'),
+            'files-0-file': UploadedFile(file=input_file, name='cats.txt')
+        }
+        correct_combs = [
+            '1cats cats.txt',
+            '2cats cats.txt',
+            '3cats cats.txt',
+            '4cats cats.txt',
+            '1dogs cats.txt',
+            '2dogs cats.txt',
+            '3dogs cats.txt',
+            '4dogs cats.txt',
+            '1hamsters cats.txt',
+            '2hamsters cats.txt',
+            '3hamsters cats.txt',
+            '4hamsters cats.txt',
+        ]
+
+        response = c.post('/sim/', post_data)
+
+        exec_file.close()
+        input_file.close()
+        sleep(30)
+        job_id = JobIdModel.objects.get(job_name='testview')
+        self.assertEqual(job_id.job_name, 'testview',
+                         msg='Name of the job is invalid; expected \'testview\', got \'' + job_id.job_name + '\'')
+        schedd = htcondor.Schedd()
+        history = list(schedd.history('ClusterId == ' +
+                                      str(job_id.cluster_id), ['Cmd', 'Arguments', 'TransferInput'], -1))
+        self.assertEqual(len(history), 12, msg='Number of jobs is not 12, got jobs: ' + str(history))
+        exec_path = os.path.abspath(os.path.dirname(__file__)) + '/' + job_id.job_name + '/helloworld'
         input_path = 'cats.txt, '
         for job in history:
             self.assertEqual(job['Cmd'],
@@ -202,3 +274,4 @@ class FormTest(TestCase):
             'args': '1, 2, 1'
         })
         self.assertTrue(form.is_valid())
+
