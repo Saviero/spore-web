@@ -1,7 +1,7 @@
 from django.shortcuts import render, redirect
 from django.forms import formset_factory
 from sim.forms import ValueForm, AddFileForm, ExecutableFileForm, ArgTemplateForm
-from spec_factory import SpecFactory
+from .spec_factory import SpecFactory
 
 
 def index(request):
