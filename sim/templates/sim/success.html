@@ -1,0 +1,9 @@
+{% extends "base.html" %}
+
+{% block extrahead %}
+<link rel="stylesheet" href="sim/css/index.css">
+{% endblock extrahead %}
+
+{% block content %}
+    <p> Job {{ job_name }} succesfully created. You can check it's progress in <a href="/logs/{{ job_name }}">logs.</a></p>
+{% endblock content %}

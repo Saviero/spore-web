@@ -5,8 +5,7 @@ import os
 
 from itertools import product
 from sim.models import JobIdModel
-from django.core.files.uploadedfile import UploadedFile
-from shutil import rmtree
+from django.db import IntegrityError
 
 
 def save_file(file, dest):
@@ -15,6 +14,9 @@ def save_file(file, dest):
         for chunk in file.chunks():
             destination.write(chunk)
 
+
+class JobNameDuplicateError(Exception):
+    pass
 
 class Name:
     """ A class for pairs <name : values>, where 'name' - name of a argument template argument,
@@ -59,8 +61,8 @@ class SpecFactory:
         """
         missed_names = []
         for name in self.__names:
-            if not (name in names):
-                missed_names.append(name)
+            if not (name.name in names):
+                missed_names.append(name.name)
         return missed_names
 
     def unused_names(self, names):
@@ -71,7 +73,12 @@ class SpecFactory:
         """
         unused_names = []
         for name in names:
-            if not (name in self.__names):
+            is_in = False
+            for saved_name in self.__names:
+                if name == saved_name.name:
+                    is_in = True
+                    break
+            if not is_in:
                 unused_names.append(name)
         return unused_names
 
@@ -135,22 +142,24 @@ class SpecFactory:
         """
         Launching HTCondor jobs with provided executable, name values and files.
         Storing local ID for a launch and created Cluster ID in sim.models.JobIdModel.
-        :param exec_data: a dictionary representation of sim.forms.ExecutableForm
+        :param exec_data: a dictionary representation of sim.forms.JobForm
         :param value_data: a dictionary representation of sim.forms.ValueForm
         :param file_data: a dictionary representation of sim.forms.FileForm
         :return: Cluster ID of a newly created job
         """
         # Getting new ID entry
-        job_entry = JobIdModel(cluster_id=-1)
+        try:
+            job_entry = JobIdModel(exec_data['job_name'], cluster_id=-1)
+        except IntegrityError:
+            raise JobNameDuplicateError('This job name already exist!')
         job_entry.save()
-        next_id = job_entry.id
 
         # Making working directory and changing location to it
-        os.makedirs(os.path.join(os.path.abspath(os.path.dirname(__file__)), str(next_id)))
-        os.chdir(os.path.join(os.path.abspath(os.path.dirname(__file__)), str(next_id)))
+        os.makedirs(os.path.join(os.path.abspath(os.path.dirname(__file__)), exec_data['job_name']))
+        os.chdir(os.path.join(os.path.abspath(os.path.dirname(__file__)), exec_data['job_name']))
 
         # Storing files in directory
-        save_file(exec_data['execfile'], os.getcwd())
+        save_file(exec_data['exec_file'], os.getcwd())
         input_files_names = ''
         for file in file_data:
             save_file(file['file'], os.getcwd())
@@ -158,16 +167,16 @@ class SpecFactory:
 
         # Preparing specs
 
-        exec_name = exec_data['execfile'].name
+        exec_name = exec_data['exec_file'].name
 
         # Creating a base ClassAd for all jobs
         base_ad = classad.ClassAd({
-            'Cmd': os.getcwd() + '/' + exec_name,
+            'Cmd': (os.getcwd() + '/' + exec_name).encode('utf-8'),
             'Out': 'out',
             'Err': 'err',
-            'UserLog': os.getcwd() + '/log',
-            'TransferInput': input_files_names,
-            'Iwd': os.getcwd()
+            'UserLog': (os.getcwd() + '/log').encode('utf-8'),
+            'TransferInput': input_files_names.encode('utf-8'),
+            'Iwd': os.getcwd().encode('utf-8')
         })
 
         # Process data and getting all possible args
@@ -177,7 +186,10 @@ class SpecFactory:
         # Making ads for each arg
         proc_ads = []
         for arg in args:
-            proc_ads.append((classad.ClassAd({'Arguments': arg}), 1))
+            proc_ads.append((classad.ClassAd({'Arguments': arg.encode('utf-8')}), 1))
+
+        if len(proc_ads) == 0:
+            proc_ads = [(classad.ClassAd({'Arguments': ''}), 1)]
 
         # Sending jobs to local condor_schedd
         schedd = htcondor.Schedd()

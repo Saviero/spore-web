@@ -1,5 +1,6 @@
 from django import forms
 from django.core.exceptions import ValidationError
+from sim.models import JobIdModel
 import gettext
 
 
@@ -25,7 +26,7 @@ class ValueForm(forms.Form):
             if len(argslist) != 3:
                 valid = False
                 self.add_error('args', ValidationError(
-                    gettext.gettext('Invalid number of arguements, expected 3, got %(num)s'),
+                    gettext.gettext('Invalid number of arguments, expected 3, got %(num)s'),
                     code='invalid_num_args',
                     params={'num': len(argslist)}))
             else:
@@ -36,7 +37,7 @@ class ValueForm(forms.Form):
                     except ValueError:
                         valid = False
                         self.add_error('args', ValidationError(
-                            gettext.gettext('Invalid type of arguements, expected integer'),
+                            gettext.gettext('Invalid type of arguments, expected integer'),
                             code='invalid_type_args'))
         elif self.cleaned_data['type'] == 'v':
             # Nothing special for arbitrary values so far
@@ -49,12 +50,22 @@ class AddFileForm(forms.Form):
     name = forms.CharField(label="Include in the args as", max_length=50, required=False)
 
 
-class ExecutableFileForm(forms.Form):
-    execfile = forms.FileField(label="Upload executable")
+class JobForm(forms.Form):
+    job_name = forms.CharField(label='Job Name:', max_length=300)
+    exec_file = forms.FileField(label="Upload executable")
+    arg_template = forms.CharField(label="Argument template", max_length=300)
 
-
-class ArgTemplateForm(forms.Form):
-    argtemplate = forms.CharField(label="Argument template", max_length=300)
-
+    def is_valid(self):
+        valid = super(JobForm, self).is_valid()
+        if not valid:
+            return valid
+        for job in JobIdModel.objects.all():
+            if self.cleaned_data['job_name'] == job.job_name:
+                valid = False
+                self.add_error('job_name', ValidationError(
+                            gettext.gettext('This name already exists'),
+                            code='duplicate_job_name'))
+                break
+        return valid
 
 

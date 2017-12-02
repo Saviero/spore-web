@@ -23,26 +23,36 @@
 
     <h3>Submit Simulation</h3>
     <form id="spec_form" method="post" action="/sim/" enctype="multipart/form-data">
-        {{ exec_form.as_p }}
-        {{ argtemp_form.as_p }}
+        {{ job_form.as_p }}
         <table id="id_value_forms">
             <tbody>
             {% for form in arg_forms %}
-                <tr><td>{{ form.type.label }}: {{ form.type }}</td></tr>
-                <tr><td>{{ form.name.label }}: {{ form.name }}</td></tr>
-                <tr><td>{{ form.args.label }}: {{ form.args }}</td></tr>
+                <tr><td>{{ form.type.label }}: {{ form.type }} {{ form.type.errors }}</td></tr>
+                <tr><td>{{ form.name.label }}: {{ form.name }} {{ form.name.errors }}</td></tr>
+                <tr><td>{{ form.args.label }}: {{ form.args }} {{ form.args.errors }}</td></tr>
             {% endfor %}
             </tbody>
         </table>
         <table id="id_files_forms">
             <tbody>
             {% for form in file_forms %}
-                <tr><td>{{ form.file.label }}: {{ form.file }}</td></tr>
-                <tr><td>{{ form.name.label }}: {{ form.name }}</td></tr>
+                <tr><td>{{ form.file.label }}: {{ form.file }} {{ form.file.errors }}</td></tr>
+                <tr><td>{{ form.name.label }}: {{ form.name }} {{ form.name.errors }}</td></tr>
             {% endfor %}
             </tbody>
         </table>
         {% csrf_token %}
-        <input id="id_submit" type="submit" name="submit" value="Start Simulation"/>
+        {% if missed_names %}
+            <p>Names not specified:
+            {% for name in missed_names %}
+                {{ name }}
+            {% endfor %}
+            </p>
+        {% endif %}
+        <p>
+            {{ arg_forms.management_form }}
+            {{ file_forms.management_form }}
+            <input id="id_submit" type="submit" name="submit" value="Start Simulation"/>
+        </p>
     </form>
 {% endblock content %}

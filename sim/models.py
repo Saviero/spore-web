@@ -5,7 +5,7 @@ class Configuration(models.Model):
     name = models.CharField(max_length=200)
     arg_template = models.CharField(max_length=300)
 
-    def __str__(self):
+    def __unicode__(self):
         return self.name
 
 class Argument(models.Model):
@@ -20,7 +20,7 @@ class Argument(models.Model):
     arg_value = models.CharField(max_length=300)
     configuration = models.ForeignKey(Configuration, on_delete=models.CASCADE)
 
-    def __str__(self):
+    def __unicode__(self):
         return self.name
 
 

@@ -1,3 +1,4 @@
 from django.contrib import admin
+from sim.models import JobIdModel
 
-# Register your models here.
+admin.site.register(JobIdModel)
