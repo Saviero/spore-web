@@ -25,5 +25,6 @@ class Argument(models.Model):
 
 
 class JobIdModel(models.Model):
+    """ This model stores created cluster_ids for further use."""
     job_name = models.CharField(max_length=300, primary_key=True, default='null')
     cluster_id = models.IntegerField()
