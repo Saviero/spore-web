@@ -209,11 +209,11 @@ class SpecFactoryParserTest(TestCase):
             'files-INITIAL_FORMS': u'0',
             'values-0-name': u'one',
             'values-1-type': u'v',
-            'arg_template': u'{one}{two} {three}',
-            'job_name': u'testview',
+            'job-arg_template': u'{one}{two} {three}',
+            'job-job_name': u'testview',
             'values-MAX_NUM_FORMS': u'1000',
             'files-TOTAL_FORMS': u'1',
-            'exec_file': UploadedFile(file=exec_file, name='helloworld'),
+            'job-exec_file': UploadedFile(file=exec_file, name='helloworld'),
             'files-0-file': UploadedFile(file=input_file, name='cats.txt')
         }
         correct_combs = [

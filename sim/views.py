@@ -56,7 +56,7 @@ def index(request):
                     except JobNameDuplicateError:
                         pass # TODO Figure out what to do with such exception, though it should never be raised
                     return HttpResponseRedirect(
-                        reverse('success', kwargs={'job_name':job_form.cleaned_data['job_name']})
+                        reverse('success', kwargs={'job_name': job_form.cleaned_data['job_name']})
                     )
     else:
         value_formset = ValueFormSet(prefix='values')
