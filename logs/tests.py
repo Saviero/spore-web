@@ -1,10 +1,19 @@
 import os
 from decimal import Decimal
+from time import sleep
 
+from htcondor import Schedd
+from classad import ClassAd
+
+from django.core.exceptions import ObjectDoesNotExist
 from django.test import TestCase
 from django.db import connection
 
+from sim.models import JobIdModel
+from .models import FinishedJobs
 from .parser import parse, check_type, make_insert
+from .daemon import check_history
+from sporeweb.settings import WORKING_DIRECTORY
 
 class CheckTypeTest(TestCase):
     def test_with_integer(self):
@@ -68,3 +77,36 @@ class ParserTest(TestCase):
                               1024, 171, Decimal('4.17'), 1.73036, 0.131062)]
             self.assertEqual(res1, expected_res1)
         os.remove(filename)
+
+
+class DaemonTest(TestCase):
+    def test_with_processed_jobs(self):
+        if not os.path.exists(WORKING_DIRECTORY + '/helloworld'):
+            os.mkdir(WORKING_DIRECTORY + '/helloworld')
+            file = open(WORKING_DIRECTORY + '/helloworld/out', mode='w')
+            file.close()
+
+        ad = ClassAd({'Cmd': (WORKING_DIRECTORY + '/spore-web/logs/static/test_files/helloworld').encode('utf-8'),
+            'Out': 'out',
+            'Err': 'err',
+            'UserLog': (WORKING_DIRECTORY + '/helloworld/log').encode('utf-8'),
+            'TransferInput': ' ',
+            'Iwd': (WORKING_DIRECTORY+ '/helloworld').encode('utf-8')
+        })
+
+        schedd = Schedd()
+        job_entry = JobIdModel(job_name=u'helloworld', cluster_id=schedd.submit(ad, spool=False))
+        job_entry.save()
+
+        sleep(10)
+        check_history()
+        try:
+            job = FinishedJobs.objects.get(cluster_id=job_entry.cluster_id)
+        except ObjectDoesNotExist:
+            job = None
+        self.assertTrue(job != None)
+
+        os.remove(WORKING_DIRECTORY + '/helloworld/out')
+        os.remove(WORKING_DIRECTORY + '/helloworld/log')
+        os.remove(WORKING_DIRECTORY + '/helloworld/err')
+        os.rmdir(WORKING_DIRECTORY + '/helloworld')
