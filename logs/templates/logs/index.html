@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+
+{% block extrahead %}
+    <link rel="stylesheet" href="/static/css/index.css">
+{% endblock extrahead %}
+
+{% block content %}
+    <div class = "finished jobs">
+        <h3>Finished jobs:</h3>
+        {% if finished_jobs %}
+            <ul>
+                {% for job in finished_jobs %}
+                <li><a href="{% url 'logs:detail' job %}">{{job}}</a></li>
+                {% endfor %}
+             </ul>
+        {% else %}
+            <p>There are no finished jobs.</p>
+        {% endif %}
+    </div>
+    <div class = "unfinished jobs">
+        <h3>Unfinished jobs:</h3>
+        {% if unfinished_jobs %}
+            <ul>
+                {% for job in unfinished_jobs %}
+                <li><a href="{% url 'logs:detail' job %}">{{job}}</a></li>
+                {% endfor %}
+             </ul>
+        {% else %}
+            <p>There are no unfinished jobs.</p>
+        {% endif %}
+    </div>
+{% endblock content %}

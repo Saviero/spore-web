@@ -1,0 +1,17 @@
+* {
+    box-sizing: border-box;
+    font-family: Helvetica;
+}
+
+.finished {
+    float: left;
+}
+
+.unfinished {
+    float: right;
+}
+
+.jobs {
+    padding: 20px;
+    width: 50%;
+}
