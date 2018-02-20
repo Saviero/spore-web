@@ -53,7 +53,7 @@ class AddFileForm(forms.Form):
 class JobForm(forms.Form):
     job_name = forms.CharField(label='Job Name:', max_length=300)
     exec_file = forms.FileField(label="Upload executable")
-    arg_template = forms.CharField(label="Argument template", max_length=300)
+    arg_template = forms.CharField(label="Argument template", max_length=300, required=False)
 
     def is_valid(self):
         valid = super(JobForm, self).is_valid()

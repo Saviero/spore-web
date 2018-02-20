@@ -117,11 +117,14 @@ class SpecFactory:
         Getting all possible combination of argument strings, using stored names' values.
         :return: A list of all possible argument strings
         """
-        combos = [list(x) for x in self.__names[0].values]
-        for i in range(1, len(self.__names)):
-            combos = list(product(combos, self.__names[i].values))
-            for j in range(0, len(combos)):
-                combos[j] = combos[j][0] + [combos[j][1]]
+        if len(self.__names) == 0:
+            combos = [[]]
+        else:
+            combos = [list(x) for x in self.__names[0].values]
+            for i in range(1, len(self.__names)):
+                combos = list(product(combos, self.__names[i].values))
+                for j in range(0, len(combos)):
+                    combos[j] = combos[j][0] + [combos[j][1]]
         for i in range(0, len(combos)):
             combos[i] = self.join_comb(combos[i])
         return combos
