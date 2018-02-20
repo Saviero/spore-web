@@ -106,4 +106,5 @@ def parse(filename, jobname):
             cursor.execute(init_string)
             # adds rows to the table
             for line in lines[1:]:
-                cursor.execute(make_insert(line, template, jobname))
+                if line != '':
+                    cursor.execute(make_insert(line, template, jobname))
